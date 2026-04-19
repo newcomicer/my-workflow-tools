@@ -16,7 +16,7 @@
 
 ## 工具清單
 （之後加新工具時會自動更新）
-- （尚無）
+- **settlement-app** (`tools/settlement-app/`)：iRunner Excel 匯入 → 自動計算結算金額 → 匯出 PDF 費用申請單
 
 ## 工作注意事項
 - commit 訊息要寫清楚做了什麼 + 為什麼
