@@ -35,6 +35,30 @@
 
 ## budget-tracker
 
+### KM-008 🔴 Firebase signInWithRedirect 跨域導致 getRedirectResult 失敗
+- **問題**：登入後被導回 app，但 `getRedirectResult()` 拿不到 user，停在登入頁
+- **根因**：`authDomain` 用 `firebaseapp.com`，但 app 在 `web.app`，兩個不同 origin，session storage 無法跨域共享
+- **解法**：`authDomain` 改為與 Hosting 相同的 `web.app` 網域（例如 `h2u-budget-tracker.web.app`），並在 Google Cloud Console → 憑證 → OAuth 2.0 用戶端 → 已授權的重新導向 URI 加上 `https://<site>.web.app/__/auth/handler`
+- **影響範圍**：所有用非預設 Hosting site（非 project ID 預設網址）部署的 Firebase Auth redirect 流程
+- **未來注意**：Firebase Hosting 有多個 site 時，`authDomain` 要對應使用的 site 網址，不能沿用預設的 `firebaseapp.com`
+
+### KM-009 🟡 Firebase Hosting 部署到非預設 site 需設定 firebase.json
+- **問題**：`firebase deploy` 部署到 `budget-tracker-cfee4.web.app`（專案預設），而非預期的 `h2u-budget-tracker.web.app`
+- **根因**：`firebase.json` 沒有指定 `site`，CLI 預設部署到與 project ID 同名的 site
+- **解法**：在 `firebase.json` 的 `hosting` 區塊加上 `"site": "h2u-budget-tracker"`
+- **影響範圍**：有自訂 Hosting site ID 的所有專案
+- **未來注意**：建立非預設 site 時，`firebase.json` 必須明確指定 `site`
+
+### KM-010 🟡 Google 登入每次自動選上次帳號，無法切換
+- **問題**：登出後再登入，自動用上次的 Google 帳號，看不到帳號選擇器
+- **根因**：`GoogleAuthProvider` 預設沿用 Google session
+- **解法**：`provider.setCustomParameters({ prompt: 'select_account' })`
+- **影響範圍**：所有 Google Sign-in 流程
+- **未來注意**：多帳號環境（個人 + 公司）一定要加這個參數
+
+---
+
+
 ### KM-007 🟡 用 style.display='none' 關 modal，下次 classList.add('open') 無效
 - **問題**：儲存設定後再次點齒輪按鈕，設定視窗完全不出現
 - **根因**：關閉時用 `element.style.display='none'`（inline style）；重開時用 `element.classList.add('open')`（class CSS 設 display:flex）。Inline style 優先級高於 class，所以 class 的 display:flex 被蓋掉，視窗永遠隱藏
@@ -82,4 +106,4 @@
 
 ---
 
-*最後更新：2026-04-26（KM-007 新增）*
+*最後更新：2026-04-28（KM-008、009、010 新增）*
