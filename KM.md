@@ -35,6 +35,27 @@
 
 ## budget-tracker
 
+### KM-013 🟡 登出後 loginOverlay 按鈕卡在「登入中...」disabled 狀態
+- **問題**：登入成功進入系統後，點登出，loginOverlay 再次出現時登入按鈕文字是「登入中...」且無法點擊
+- **根因**：`signInWithGoogle()` 把按鈕改成 disabled + 「登入中...」，登入成功後沒有重設；登出時 loginOverlay 重新顯示，但按鈕狀態殘留
+- **解法**：`handleAuthUser(null)` 分支（user 為 null 時）補上 `btn.disabled=false; btn.textContent='使用 Google 帳號登入'`
+- **影響範圍**：所有「登入按鈕改狀態後靠 overlay hide/show 切換畫面」的 pattern
+- **未來注意**：畫面用 overlay 切換時，重新顯示前要確認所有 UI 狀態已重設
+
+### KM-011 🔴 `<label>` 包 `<input>` 導致 onclick 觸發兩次，操作看似無效
+- **問題**：角色勾選點一下完全沒反應（加了又馬上移掉）
+- **根因**：`<label onclick="fn()"><input type="checkbox">文字</label>` — 點 label 會先觸發 onclick，再對 checkbox 發一次合成 click，合成 click 冒泡回 label 又觸發一次 onclick；兩次抵銷
+- **解法**：onclick 改為接收 event 參數，函式內第一行呼叫 `e.preventDefault()` 阻止合成 click
+- **影響範圍**：所有「label 包 input，且 onclick 做開關邏輯」的 pattern 都有此問題
+- **未來注意**：toggle UI 優先用 `<div onclick>` + CSS class 控制，避免用 label 包 input 觸發雙重事件
+
+### KM-012 🟡 新用戶登入白名單後，成員管理表格不顯示該人員
+- **問題**：把 email 加入白名單 → 該用戶登入成功 → 成員管理表格卻看不到他
+- **根因**：`buildMergedMembers` 只把有 Firestore profile 記錄的人加進 `currentMembers`；白名單簡化後 `addToWhitelist` 不再自動建 profile，導致新用戶登入後沒有 profile 記錄
+- **解法**：在 `handleAuthUser` 登入成功後，檢查當前用戶是否在 `currentMembers`，不在的話自動建立基本 profile（名字抓 Google displayName，角色預設唯讀）
+- **影響範圍**：白名單新增流程 + 首次登入流程
+- **未來注意**：白名單控制「誰能登入」，profile 控制「誰出現在成員表格」；兩者要同步
+
 ### KM-008 🔴 Firebase signInWithRedirect 跨域導致 getRedirectResult 失敗
 - **問題**：登入後被導回 app，但 `getRedirectResult()` 拿不到 user，停在登入頁
 - **根因**：`authDomain` 用 `firebaseapp.com`，但 app 在 `web.app`，兩個不同 origin，session storage 無法跨域共享
