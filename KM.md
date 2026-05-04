@@ -35,6 +35,47 @@
 
 ## budget-tracker
 
+### KM-020 🟡 「已到款」計數硬綁 key='l5'，自訂標籤不被計入
+- **問題**：在設定頁「標籤設定」點「＋ 新增」新增 L5 標籤（如「L5已到款(內扣)」），指派給活動後，主頁「已到款 X 場」計數仍為 0
+- **根因**：計數邏輯 `r.bizStatus === 'l5'` 硬寫死 key，但自訂標籤的 key 是自動產生的 `custom_xxx`，不是 `l5`
+- **解法**：改為查 `labelSettings.bizStatus` 找到對應 label，若 label 開頭是 `'L5'` 就計入（同時保留 key=`l5` 的快速比對）
+- **影響範圍**：`index.html` → `updateMainPanel()` 裡的 l5 計數那行
+- **未來注意**：所有「用 key 做語意判斷」的邏輯，都有此風險；若允許自訂標籤，就不能靠固定 key 做判斷，要改靠 label 內容或另設「標記欄位」
+
+### KM-019 🟡 overflow-x:auto 容器裁切 position:absolute 子元素
+- **問題**：topbar 加 `overflow-x:auto` 後，user-dropdown（position:absolute）點開被裁切看不到
+- **根因**：`overflow-x:auto` 會建立新的 stacking/clipping context，absolute 子元素超出邊界即被裁切
+- **解法**：手機版 dropdown 改 `position:fixed`，定位基準換成 viewport，脫離 overflow 容器
+- **影響範圍**：所有在 `overflow:hidden/auto` 容器內的 absolute popup/dropdown
+- **未來注意**：在 scroll 容器內放 floating UI 一律用 `position:fixed` + 手動定位（參考 KM-004）
+
+### KM-018 🟡 RWD 手機版四個常見坑（一次整理）
+- **問題 A**：view-mode-pill 在手機上重複出現（mobileMonthBar 和 month-header 各一顆）
+- **根因 A**：新增手機版 pill 時，沒有同步隱藏桌機版的
+- **解法 A**：`@media(max-width:767px){ .month-header .view-mode-pill{display:none} }`
+
+- **問題 B**：卡片內 at-actual/at-target 並排，target 數字被 `overflow:hidden` 截掉
+- **根因 B**：`.at-card-main` 用 `justify-content:space-between`，卡片寬度不足時數字溢出被裁
+- **解法 B**：手機改 `flex-direction:column;align-items:flex-start`
+
+- **問題 C**：year-badge 文字（「2026 年度」/「全年」）在手機 topbar 斷行
+- **根因 C**：`.year-badge` 沒有 `white-space:nowrap`
+- **解法 C**：加 `white-space:nowrap` 到 `.year-badge`
+
+- **問題 D**：橫向捲動篩選列中，「活動清單 65場」被壓縮換行
+- **根因 D**：flex 容器設 `flex-wrap:nowrap` 後，子元素預設 `flex-shrink:1` 會被壓縮
+- **解法 D**：不應縮的標題區加 `flex-shrink:0`
+
+- **影響範圍**：所有 RWD 改版
+- **未來注意**：新增手機版元件時，同時確認桌機版對應元件是否需要隱藏；橫向捲動列內的標題元素一律加 `flex-shrink:0`
+
+### KM-014 🟡 切換費用輸入模式（非勞務→勞務）按鈕殘留 disabled 狀態
+- **問題**：點「人工費用」後彈出勞務表單，「＋新增這筆」按鈕無法點擊
+- **根因**：先前點非勞務費用時，`checkExpFormReady()` 把按鈕設為 disabled；切換成勞務表單時 innerHTML 整個重建，但沒有明確重設按鈕狀態；新的表單有自己的 `checkLaborFormReady()`，但初始狀態需要顯式設定
+- **解法**：勞務表單 innerHTML 設定完後立即執行 `btn.disabled=true`，再由 `checkLaborFormReady()` 在填完姓名+工時後啟用
+- **影響範圍**：所有「表單 innerHTML 整個換掉，但共用同一個提交按鈕」的 pattern
+- **未來注意**：共用按鈕在表單切換時，必須明確重設為 disabled，由新表單的 validator 接管控制權，不能依賴舊 validator 的殘留狀態
+
 ### KM-013 🟡 登出後 loginOverlay 按鈕卡在「登入中...」disabled 狀態
 - **問題**：登入成功進入系統後，點登出，loginOverlay 再次出現時登入按鈕文字是「登入中...」且無法點擊
 - **根因**：`signInWithGoogle()` 把按鈕改成 disabled + 「登入中...」，登入成功後沒有重設；登出時 loginOverlay 重新顯示，但按鈕狀態殘留
@@ -127,4 +168,4 @@
 
 ---
 
-*最後更新：2026-04-28（KM-008、009、010 新增）*
+*最後更新：2026-05-03（KM-018 新增）*
