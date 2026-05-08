@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-022 🟡 多頁面 CSS 統一：font-smoothing + zoom + font-scale 三者缺一不可
+- **問題**：settlement topbar 字體看起來比 budget-tracker 粗，字級也不同
+- **根因**：三個獨立原因疊加 — ① body 缺少 `-webkit-font-smoothing: antialiased`（字粗）② CSS `zoom` 套在 body 而非內容區（topbar 被放大）③ topbar 字級沒用 `--font-scale` CSS 變數（字大小不隨系統設定縮放）
+- **解法**：① body 加 `antialiased` ② zoom 改套在 `#settlement-content` ③ brand-name/sub-title 改用 `calc(var(--font-scale,1) * px)` 並在 JS 設定 `--font-scale`
+- **影響範圍**：`settlement.html` CSS + JS
+- **未來注意**：新增頁面時，checklist — body 要有 antialiased、zoom 不能影響 topbar、topbar 文字要用 --font-scale
+
 ### KM-020 🟡 「已到款」計數硬綁 key='l5'，自訂標籤不被計入
 - **問題**：在設定頁「標籤設定」點「＋ 新增」新增 L5 標籤（如「L5已到款(內扣)」），指派給活動後，主頁「已到款 X 場」計數仍為 0
 - **根因**：計數邏輯 `r.bizStatus === 'l5'` 硬寫死 key，但自訂標籤的 key 是自動產生的 `custom_xxx`，不是 `l5`
@@ -168,4 +175,27 @@
 
 ---
 
-*最後更新：2026-05-03（KM-018 新增）*
+### KM-019：iRunner 免費名單工作表名稱不固定
+- **問題**：解析器只找「免費名單」sheet，但有些 Excel 叫「公關名單」，導致公關人數全靠 fee=null 推斷
+- **根因**：iRunner 匯出的 sheet 名稱因賽事設定不同而異
+- **解法**：用陣列 `['免費名單', '公關名單']` 做模糊比對
+- **影響範圍**：`web/js/excel-parser.js` 免費名單偵測邏輯
+- **未來注意**：遇到新的 sheet 名稱變體就加進陣列
+
+### KM-020：親子組公關偵測容易雙重計算
+- **問題**：親子組每組 2 人但只有 1 筆費用，第 2 人 fee=null 會被誤判為公關；且免費名單的人可能跟 fee=null 的人重疊
+- **根因**：免費名單用訂單 ID 排除會失敗（同一訂單可能同時在免費名單和報名資料中）
+- **解法**：改用「每組別計數扣減法」— 先計算免費名單各組別人數，fee=null 的人先扣免費名單配額，扣完才算新公關
+- **影響範圍**：`web/js/excel-parser.js` 公關偵測區段
+- **未來注意**：測試公關人數時一定要用有親子組 + 免費名單的 Excel 交叉驗證
+
+### KM-021：報名費不能用 (人數-公關)×單價 計算
+- **問題**：親子組 2 人共用 1 筆報名費，用人數×單價會多算
+- **根因**：iRunner 的「報名項目費用」欄是每人一列，親子組第 2 人費用為 null
+- **解法**：直接從 Excel「報名項目費用」欄逐列加總（`reg_fee_by_group`），不再用人數公式
+- **影響範圍**：`web/js/excel-parser.js` + `web/index.html` 報名費計算
+- **未來注意**：所有涉及「人數×單價」的計算都可能被親子組破壞，優先用 Excel 原始數值
+
+---
+
+*最後更新：2026-05-08（KM-022 新增）*
