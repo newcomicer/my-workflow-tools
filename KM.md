@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-023 🟡 Easyflow 匯入日期格式不符 `<input type="date">` 要求
+- **問題**：匯入的費用日期無法在支出明細編輯時顯示，日期欄位空白
+- **根因**：解析 Easyflow 資料時日期存成 `MM/DD`（如 `01/04`），但 `<input type="date">` 需要 `YYYY-MM-DD` 格式
+- **解法**：匯入寫入時轉換 `MM/DD` → `YYYY-MM-DD`（年份從賽事的 `year` 欄位取得）；載入時自動修正舊資料
+- **影響範圍**：`executeImport()` 寫入 + 資料載入時的 patch 邏輯
+- **未來注意**：凡是會塞進 `<input type="date">` 的欄位，一律用 `YYYY-MM-DD` 格式存入 Firestore，不要用 `MM/DD`
+
 ### KM-022 🟡 多頁面 CSS 統一：font-smoothing + zoom + font-scale 三者缺一不可
 - **問題**：settlement topbar 字體看起來比 budget-tracker 粗，字級也不同
 - **根因**：三個獨立原因疊加 — ① body 缺少 `-webkit-font-smoothing: antialiased`（字粗）② CSS `zoom` 套在 body 而非內容區（topbar 被放大）③ topbar 字級沒用 `--font-scale` CSS 變數（字大小不隨系統設定縮放）
