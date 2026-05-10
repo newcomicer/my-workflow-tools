@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-024 🔴 select 用空字串欄位當 value，選了等於沒選
+- **問題**：Easyflow 匯入的「比對活動」下拉選了活動但 badge 不變、matchedRace 為 null，無法匯入
+- **根因**：`<option value="${rc.code}">` — 活動的 `code` 為空字串 `""` 時，option 的 value 跟「請選擇活動…」的 `value=""` 一樣，onchange 傳出空字串走 `!code` 分支
+- **解法**：改用 `rc._id`（Firestore doc ID）當 option value，保證唯一且非空
+- **影響範圍**：`renderImportPreview()` 的 raceOptions + `selectImportRace()` 的查找邏輯
+- **未來注意**：select 的 option value 不能用可能為空的欄位，要用保證唯一的 key（如 `_id`、index）
+
 ### KM-023 🟡 Easyflow 匯入日期格式不符 `<input type="date">` 要求
 - **問題**：匯入的費用日期無法在支出明細編輯時顯示，日期欄位空白
 - **根因**：解析 Easyflow 資料時日期存成 `MM/DD`（如 `01/04`），但 `<input type="date">` 需要 `YYYY-MM-DD` 格式
