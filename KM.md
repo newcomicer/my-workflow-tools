@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-025 🟡 時薪計算 Math.round 位置錯誤導致金額差 1 元
+- **問題**：小幫手費用計算 $4,309 但正確應為 $4,310
+- **根因**：`Math.round(hours * baseHourly * multiplier)` 先乘再取整，`Math.round(2 * 196 * 1.1) = Math.round(431.2) = 431`；正確做法是先把時薪取整再乘時數：`2 * Math.round(196 * 1.1) = 2 * 216 = 432`
+- **解法**：`hourlyRate = Math.round(baseHourly * multiplier)` 先取整，再用 `hours * hourlyRate` 計算
+- **影響範圍**：`calcLaborSubtotal()`、所有用 `baseHourly * grades[x]` 算小幫手費用的地方
+- **未來注意**：費率計算一律「先把單價取整，再乘數量」，避免浮點數累積誤差
+
 ### KM-024 🔴 select 用空字串欄位當 value，選了等於沒選
 - **問題**：Easyflow 匯入的「比對活動」下拉選了活動但 badge 不變、matchedRace 為 null，無法匯入
 - **根因**：`<option value="${rc.code}">` — 活動的 `code` 為空字串 `""` 時，option 的 value 跟「請選擇活動…」的 `value=""` 一樣，onchange 傳出空字串走 `!code` 分支
@@ -212,4 +219,4 @@
 
 ---
 
-*最後更新：2026-05-08（KM-022 新增）*
+*最後更新：2026-05-11（KM-025 新增）*

@@ -2,9 +2,9 @@
 
 ## 對話開始時請先讀
 1. **KM.md**（踩坑知識庫）：`my-workflow-tools/KM.md` — 必讀，避免重蹈覆轍
-2. **專案工作流程**（進度 + 待辦）：Obsidian `secondbrain/my-workflow-tools/<專案名>/專案工作流程.md`
+2. **專案工作流程**（進度 + 待辦）：Obsidian `2ndbrain/my-workflow-tools/<專案名>/專案工作流程.md`
    - 只讀本次要動的專案，不用同時讀兩個
-   - 工具清單索引：`secondbrain/my-workflow-tools/工作筆記.md`（輕量，只看清單用）
+   - 工具清單索引：`2ndbrain/my-workflow-tools/工作筆記.md`（輕量，只看清單用）
 
 ## 工作模式
 
@@ -45,7 +45,7 @@ Johnny 說「**收工**」時，Claude 依序執行：
 ## 工作桌 + 三個家
 - 📋 BeeStation 工作桌：`/Users/johnny.chang/Library/CloudStorage/BeeStation-MyBeeStationPlus/Johnny-Agent/my-workflow-tools/`（自動跨電腦同步）
 - 🐙 GitHub repo：`newcomicer/my-workflow-tools`（公開，網頁的家）
-- 📘 Obsidian 筆記本：`secondbrain/my-workflow-tools/工作筆記.md`（想法的家）
+- 📘 Obsidian 筆記本：`2ndbrain/my-workflow-tools/工作筆記.md`（想法的家）
 - 🔥 Firebase 專案：`my-workflow-tools`（資料的家）
 
 ## 工具清單
