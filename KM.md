@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-026 🟡 支出 popup 編輯狀態殘留導致新增按鈕失效
+- **問題**：正職（假日獎金）勞務表單填完後，「＋ 新增這筆」按鈕一直 disabled 無法新增
+- **根因**：`renderExpAddForm()` 沒有重設 `_editingExpIdx`（編輯索引）和按鈕文字。若之前在其他支出項目編輯過明細，殘留的 `_editingExpIdx >= 0` 和按鈕文字「✓ 更新」會帶到下次開啟的 popup
+- **解法**：`renderExpAddForm()` 開頭加 `_editingExpIdx = -1`，勞務和一般支出兩個分支都重設按鈕文字為「＋ 新增這筆」
+- **影響範圍**：`renderExpAddForm()`、所有支出類別的 popup（不限正職）
+- **未來注意**：共用 UI 元素（如 `btnAddExpEntry`）在不同模式間切換時，所有狀態（disabled、文字、全域變數）都要完整重設
+
 ### KM-025 🟡 時薪計算 Math.round 位置錯誤導致金額差 1 元
 - **問題**：小幫手費用計算 $4,309 但正確應為 $4,310
 - **根因**：`Math.round(hours * baseHourly * multiplier)` 先乘再取整，`Math.round(2 * 196 * 1.1) = Math.round(431.2) = 431`；正確做法是先把時薪取整再乘時數：`2 * Math.round(196 * 1.1) = 2 * 216 = 432`
