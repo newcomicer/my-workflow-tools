@@ -51,6 +51,7 @@ Johnny 說「**收工**」時，Claude 依序執行：
 ## 工具清單
 （之後加新工具時會自動更新）
 - **settlement-app** (`tools/settlement-app/`)：iRunner Excel 匯入 → 自動計算結算金額 → 匯出 PDF 費用申請單
+- **expense-ocr** (`expense-ocr/`)：發票照片/PDF → Gemini OCR 辨識 → Streamlit 確認 → Playwright 自動填入 EasyFlow 報帳表單
 
 ## 工作注意事項
 - commit 訊息要寫清楚做了什麼 + 為什麼
