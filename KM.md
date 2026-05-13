@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-027 🔴 同 scope 內 const 重複宣告導致整頁 JS 崩潰
+- **問題**：部署後頁面卡在「連接資料庫中…」，所有功能失效
+- **根因**：`confirmExpEntry()` 裡新增 `const total=calcLaborSubtotal()` 做驗證，但下方原本就有同名 `const total=calcLaborSubtotal()`，瀏覽器拋 `SyntaxError: Identifier 'total' has already been declared`，整個 `<script>` 區塊失效
+- **解法**：刪除重複的 `const total` 宣告，上方驗證用的 total 可直接沿用到下方
+- **影響範圍**：整個頁面（JS 語法錯誤會讓整個 script block 不執行）
+- **未來注意**：在既有函式中間插入新變數前，先搜尋函式內是否已有同名宣告。部署前用瀏覽器 console 確認無 SyntaxError
+
 ### KM-026 🟡 支出 popup 編輯狀態殘留導致新增按鈕失效
 - **問題**：正職（假日獎金）勞務表單填完後，「＋ 新增這筆」按鈕一直 disabled 無法新增
 - **根因**：`renderExpAddForm()` 沒有重設 `_editingExpIdx`（編輯索引）和按鈕文字。若之前在其他支出項目編輯過明細，殘留的 `_editingExpIdx >= 0` 和按鈕文字「✓ 更新」會帶到下次開啟的 popup
