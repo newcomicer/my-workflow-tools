@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-029 🔴 getRegKeys() 用 key 找「未登記」項目，自訂標籤後 okKey 抓錯
+- **問題**：活動收入登記狀態已是「確認」，但 AOP tab 和列印表單仍顯示預估標籤
+- **根因**：`getRegKeys()` 以 `key==='收入 OK'` 尋找 OK 項目，但使用者在設定頁自訂標籤後，原始 key `'收入 OK'` 被指派給 label 為「未登記」的項目（key 和 label 已對不上），導致回傳的 `okKey` 其實是未登記的 key。此外，預估判斷硬寫 `!=='未登記'`（用字串比對），但實際的未登記 key 可能是 `'收入 OK'` 或 `'支出 OK'`
+- **解法**：`getRegKeys()` 改用 `label==='未登記'` 找未登記項目（label 才是使用者看到的語義），再從剩餘項目中用 position fallback 判斷 ok/est。預估偵測改用 `getRegKeys()` 回傳的 `unregKey` 取代硬寫 `'未登記'`
+- **影響範圍**：`getRegKeys()`、`renderAopAchievement()`、`printBudgetSheet()` 的預估偵測邏輯
+- **未來注意**：labelSettings 的 key 不保證有語義（可能是 `custom_` 開頭的亂數），判斷項目語義要用 label 或 position，不能依賴 key 名稱
+
 ### KM-028 🟡 renderCardView() 提早 return 導致手機版卡片空白
 - **問題**：手機版瀏覽時「活動清單」區域完全空白，無任何卡片
 - **根因**：`renderTable()` 在 `raceViewMode==='card'` 時呼叫 `renderCardView()` 後直接 return，跳過了最後面的 `renderMobileCards(filteredRaces)`。桌面版卡片渲染進 `#desktopCardView`（手機 CSS 隱藏），手機版卡片容器 `#mobileCardList` 則從未被填入內容
