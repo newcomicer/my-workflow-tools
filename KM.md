@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-028 🟡 renderCardView() 提早 return 導致手機版卡片空白
+- **問題**：手機版瀏覽時「活動清單」區域完全空白，無任何卡片
+- **根因**：`renderTable()` 在 `raceViewMode==='card'` 時呼叫 `renderCardView()` 後直接 return，跳過了最後面的 `renderMobileCards(filteredRaces)`。桌面版卡片渲染進 `#desktopCardView`（手機 CSS 隱藏），手機版卡片容器 `#mobileCardList` 則從未被填入內容
+- **解法**：在 `renderCardView()` 結尾加上 `renderMobileCards(filteredRaces)`，讓兩邊同步渲染
+- **影響範圍**：`renderCardView()`、手機版活動清單
+- **未來注意**：當同一份資料需要渲染到多個 DOM 容器（桌面 vs 手機）時，不能用 early return 跳過其中一個。新增渲染入口時要確認所有 viewport 的容器都有被填入
+
 ### KM-027 🔴 同 scope 內 const 重複宣告導致整頁 JS 崩潰
 - **問題**：部署後頁面卡在「連接資料庫中…」，所有功能失效
 - **根因**：`confirmExpEntry()` 裡新增 `const total=calcLaborSubtotal()` 做驗證，但下方原本就有同名 `const total=calcLaborSubtotal()`，瀏覽器拋 `SyntaxError: Identifier 'total' has already been declared`，整個 `<script>` 區塊失效
