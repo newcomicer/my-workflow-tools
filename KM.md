@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-030 🔴 新增 Firestore collection 忘記更新安全規則，讀寫靜默失敗
+- **問題**：Sprint U 新增 `presence` 和 `editLocks` 兩個 collection，部署後線上使用者永遠顯示 0、編輯鎖無作用
+- **根因**：Firestore 安全規則採白名單制，`firestore.rules` 裡沒有 match 到的 collection 一律 deny。前端的 `onSnapshot` 和 `doc.set()` 被拒絕但不會拋出明顯的 UI 錯誤，只有 console 有 permission-denied
+- **解法**：在 `firestore.rules` 加上 `match /presence/{email}` 和 `match /editLocks/{raceId}` 的讀寫規則，然後 `firebase deploy --only firestore:rules`
+- **影響範圍**：所有新增的 Firestore collection
+- **未來注意**：**每次新增 Firestore collection，第一件事就是去 `firestore.rules` 加對應的 match 規則並部署**。前端不會有明顯報錯，很容易以為是程式邏輯問題而浪費除錯時間
+
 ### KM-029 🔴 getRegKeys() 用 key 找「未登記」項目，自訂標籤後 okKey 抓錯
 - **問題**：活動收入登記狀態已是「確認」，但 AOP tab 和列印表單仍顯示預估標籤
 - **根因**：`getRegKeys()` 以 `key==='收入 OK'` 尋找 OK 項目，但使用者在設定頁自訂標籤後，原始 key `'收入 OK'` 被指派給 label 為「未登記」的項目（key 和 label 已對不上），導致回傳的 `okKey` 其實是未登記的 key。此外，預估判斷硬寫 `!=='未登記'`（用字串比對），但實際的未登記 key 可能是 `'收入 OK'` 或 `'支出 OK'`
