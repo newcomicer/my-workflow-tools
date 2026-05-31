@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-031 🔴 signInWithPopup 在 Safari / iOS / in-app 瀏覽器卡死，使用者進不來
+- **問題**：白名單裡的同事用 Safari / iPhone 登入，選完 Google 帳號後畫面卡在「登入中...」永遠不會繼續。Firebase Auth 後台查不到該 user（從沒成功創建）
+- **根因**：`signInWithGoogle()` 用 `auth.signInWithPopup()`，但 Safari ITP（智慧防追蹤）、iOS、FB/IG/Line in-app 瀏覽器會擋第三方 cookie 或 popup 機制，導致 popup 開不出來 / callback 回不來。code 已經把按鈕 disable 並改成「登入中...」，因此 UI 永遠停在那個狀態
+- **解法**：偵測環境，Safari / iOS / mobile / in-app 直接走 `signInWithRedirect`；桌機 popup 失敗（`auth/popup-blocked` / `operation-not-supported-in-this-environment` / `internal-error`）自動 fallback 改 redirect；使用者主動關 popup 則解鎖按鈕讓他重試。`getRedirectResult()` 已經寫好回跳處理，不需要改
+- **影響範圍**：`index.html` → `signInWithGoogle()`、`_shouldUseRedirect()`、`_resetLoginBtn()`
+- **未來注意**：Firebase Auth 用 popup 的網站一定要備好 redirect fallback，否則 Safari / 行動 / in-app 使用者會直接卡死且沒有任何錯誤訊息。除錯時若白名單沒問題但 Firebase Auth 查不到 user，先懷疑前端登入流程在 popup 階段就死了
+
 ### KM-030 🔴 新增 Firestore collection 忘記更新安全規則，讀寫靜默失敗
 - **問題**：Sprint U 新增 `presence` 和 `editLocks` 兩個 collection，部署後線上使用者永遠顯示 0、編輯鎖無作用
 - **根因**：Firestore 安全規則採白名單制，`firestore.rules` 裡沒有 match 到的 collection 一律 deny。前端的 `onSnapshot` 和 `doc.set()` 被拒絕但不會拋出明顯的 UI 錯誤，只有 console 有 permission-denied
