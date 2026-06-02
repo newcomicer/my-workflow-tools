@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-032 🟡 div onclick 觸發的明細編輯路徑繞過 applyLockState 的 button 鎖
+- **問題**：v2.2.4 唯讀使用者開 Detail Panel 後，仍能點收入明細 row 開 popup 編輯並 autoSave 寫入 Firestore
+- **根因**：`applyLockState()` 只 disable `button` 元素，但收入/支出明細 row 是 `<div class="item-row" onclick="openItemPopup(...)">`，`onclick` 不會被 `disabled` 屬性影響
+- **解法**：(1) `applyLockState` 額外對 `.item-row` 加 `pointer-events:none` + `opacity:0.7`；(2) `openItemPopup` / `openExpPopup` / `confirmPopup` 入口加 role 防呆 toast（縱深防禦）
+- **影響範圍**：Detail Panel 鎖定邏輯、所有用 div onclick 取代 button 的互動元素
+- **未來注意**：`applyLockState` 鎖定邏輯不能只看 `button`/`input`，div/span 等可點擊元素也要看；加新「可點擊的非 button 元素」時，務必在 applyLockState 補上 pointer-events 處理；後端入口 function 一律要 role guard（前端 UI 鎖不可信）
+
 ### KM-031 🔴 signInWithPopup 在 Safari / iOS / in-app 瀏覽器卡死，使用者進不來
 - **問題**：白名單裡的同事用 Safari / iPhone 登入，選完 Google 帳號後畫面卡在「登入中...」永遠不會繼續。Firebase Auth 後台查不到該 user（從沒成功創建）
 - **根因**：`signInWithGoogle()` 用 `auth.signInWithPopup()`，但 Safari ITP（智慧防追蹤）、iOS、FB/IG/Line in-app 瀏覽器會擋第三方 cookie 或 popup 機制，導致 popup 開不出來 / callback 回不來。code 已經把按鈕 disable 並改成「登入中...」，因此 UI 永遠停在那個狀態
