@@ -35,6 +35,13 @@
 
 ## budget-tracker
 
+### KM-033 🔴 整份 doc set 覆蓋造成多人並行登入時 profile 互蓋
+- **問題**：tony.tsai 登入成功（presence 有寫入），但成員管理裡看不到他；memberProfiles 裡也查不到他的 profile
+- **根因**：`saveMemberProfileField` 用 `db.collection('settings').doc('memberProfiles').set(cachedProfiles)` 整份覆蓋。當 A 讀完 cachedProfiles → B 讀完（也是舊版） → A 寫入自己（新版含 A）→ B 寫入自己（基於舊版 + B），B 的整份覆蓋會把 A 剛新增的部分蓋掉。同一時段有多人首登時，後寫的會吃掉先寫的。額外副作用：管理者在系統設定看到的成員清單是登入當下的快取，新成員後續登入也不會自動反映
+- **解法**：(1) `saveMemberProfileField` 改用 `.set({profiles:{[email]:merged}},{merge:true})`，只送單一 email 的合併 patch；(2) `openSettings()` 改 async + 重新 fetch memberProfiles，確保管理者看到最新狀態
+- **影響範圍**：`saveMemberProfileField`、`openSettings`、所有寫 memberProfiles 的路徑（角色變更、暱稱變更、profile 自動建立等）
+- **未來注意**：Firestore 共用 doc（如 settings/main、settings/memberProfiles）不能用 `.set(整份)` 寫入，必須改 `{merge:true}` + 只送 patch；尤其當多 client 會同時寫入同一份 doc 時，整份覆蓋 = race condition 不可避免。即時資料（presence/editLocks）反而比 settings 還單純，因為每個 client 寫自己 doc，沒這個問題
+
 ### KM-032 🟡 div onclick 觸發的明細編輯路徑繞過 applyLockState 的 button 鎖
 - **問題**：v2.2.4 唯讀使用者開 Detail Panel 後，仍能點收入明細 row 開 popup 編輯並 autoSave 寫入 Firestore
 - **根因**：`applyLockState()` 只 disable `button` 元素，但收入/支出明細 row 是 `<div class="item-row" onclick="openItemPopup(...)">`，`onclick` 不會被 `disabled` 屬性影響
@@ -268,4 +275,4 @@
 
 ---
 
-*最後更新：2026-05-11（KM-025 新增）*
+*最後更新：2026-06-05（KM-033 新增）*
