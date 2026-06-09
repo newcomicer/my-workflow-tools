@@ -39,8 +39,9 @@
 - **問題**：2026-06-05 Vicky 18:09-18:10 連續 4 次 autoSave 把 Puli Power 活動的支出明細（11 筆勞務 + 4 筆交通，共 62,334）完整寫進 Firestore，且 18:10 印出 PDF 證實當下有資料。但 19:10 Johnny 開 Detail Panel 改收入後儲存，Firestore 的 expenseEntries 變成 `{}`、expense 變 0；收入相關欄位仍對
 - **根因**：(1) `races` collection 在 `initApp()` 用 `db.collection('races').orderBy('date').get()` **一次性載入**，後續沒掛 `onSnapshot`，本機 `races[]` 永遠停在進入頁面時的快照；(2) `autoSaveDetail` 和 `saveRaceDetail` 都用 `db.collection('races').doc(r._id).set(raceToSave)` **整份覆蓋**。當 A 進頁面後本機快取就過期了，B 後續對該 race 的任何寫入 A 都看不到；A 自己再按一次儲存，會把 A 過期版本（不含 B 寫入的明細）整份蓋過去。editLock 只防同時兩人開同一 race 的 Detail Panel，**防不了「B 編完關閉後 A 開的 stale cache」**
 - **解法**：D1 樂觀鎖（test-and-set）— (1) `openDetail` 進場時先從 Firestore `.get()` 一次最新版，覆蓋本機 `races[i]`，再用最新資料填 UI；(2) 同時設 `_detailBaseline` 為當下 `itemValues` + `expenseEntries` 的深拷貝；(3) `autoSaveDetail` / `saveRaceDetail` 改 async，寫入前 `_checkRaceConflict(raceId)` fetch remote 並比對 baseline，若 `JSON.stringify(remote.expenseEntries)` 或 `itemValues` 不同 → 表示有人在你開 panel 後又改了 → 呼叫 `_reloadRaceFromRemote(remote)` 把 remote 載回本機 + 重繪 + toast 警告「他人剛剛改了此活動，已重新載入最新版本」→ **阻擋本次寫入**；(4) 寫入成功後 `_refreshDetailBaseline(r)` 把 baseline 更新成剛寫入的版本（避免下次 autoSave 自我觸發衝突）；(5) `closeDetail` 清掉 `_detailBaseline = null`
+- **v2.3.5 後續修正**：D1 第一版用 `JSON.stringify` 直接比對，會因 Firestore map key 順序、空陣列/空物件/null 被序列化後形狀不同而誤判「有人修改」，即使沒有其他使用者在線也會跳衝突提示。修正為 `_normalizeDetailData()` + `_detailDataKey()`：比對前排序 object key、移除空資料、穩定化數字，再做字串 key；toast 文案改成「此活動資料已更新，已重新載入最新版本」，避免程式無法判斷修改者時誤導為一定是他人修改。
 - **影響範圍**：`openDetail`、`closeDetail`、`autoSaveDetail`、`saveRaceDetail`、本機 race 編輯流程
-- **未來注意**：與 KM-033 同模式（整份 set 覆蓋），但這次發生在更核心的 `races` collection。任何被多人共寫的 Firestore doc 都有此風險；最理想的長期解法是 `races` 改 onSnapshot 即時同步，但成本高（要處理衝突 UI）；樂觀鎖（fetch + 比對 baseline）是低成本中等保護的折衷做法。Easyflow 匯入（`executeImport` 內也 set 整份）仍是同樣 race condition，但目前 Easyflow 入口外不會跑進 Detail Panel 流程，不受 D1 保護 — 未來若 Easyflow 匯入也常有資料遺失，要套用相同 pattern
+- **未來注意**：與 KM-033 同模式（整份 set 覆蓋），但這次發生在更核心的 `races` collection。任何被多人共寫的 Firestore doc 都有此風險；最理想的長期解法是 `races` 改 onSnapshot 即時同步，但成本高（要處理衝突 UI）；樂觀鎖（fetch + normalize 後比對 baseline）是低成本中等保護的折衷做法。Easyflow 匯入（`executeImport` 內也 set 整份）仍是同樣 race condition，但目前 Easyflow 入口外不會跑進 Detail Panel 流程，不受 D1 保護 — 未來若 Easyflow 匯入也常有資料遺失，要套用相同 pattern
 
 ### KM-033 🔴 整份 doc set 覆蓋造成多人並行登入時 profile 互蓋
 - **問題**：tony.tsai 登入成功（presence 有寫入），但成員管理裡看不到他；memberProfiles 裡也查不到他的 profile
@@ -282,4 +283,4 @@
 
 ---
 
-*最後更新：2026-06-05（KM-034 新增）*
+*最後更新：2026-06-09（KM-034 v2.3.5 補充）*
